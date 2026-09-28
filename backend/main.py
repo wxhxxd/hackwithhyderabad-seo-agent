@@ -115,7 +115,7 @@ async def trigger_analysis(payload: AnalysisPayload):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                model="llama-3.1-70b-versatile", 
+                model="mixtral-8x7b-32768", 
                 temperature=0.2
             )
             response_content = completion.choices[0].message.content
