@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, GitPullRequest, Bug, TerminalSquare, Search, Plus, Play, ChevronRight, Activity } from "lucide-react";
+import { Zap, GitPullRequest, Bug, TerminalSquare, Search, Plus, Play, ChevronRight, Activity, Database } from "lucide-react";
 import Link from "next/link";
 
 export default function Dashboard() {
