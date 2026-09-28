@@ -33,7 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "dummy_key")
 HINDSIGHT_API_KEY = os.environ.get("HINDSIGHT_API_KEY", "dummy_key")
 
 groq_client = Groq(api_key=GROQ_API_KEY)
