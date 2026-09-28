@@ -14,8 +14,8 @@ except ImportError:
         from hindsight import Hindsight
     except ImportError:
         class Hindsight:
-            def __init__(self, api_key):
-                self.api_key = api_key
+            def __init__(self, *args, **kwargs):
+                self.api_key = kwargs.get("api_key", "dummy_key")
                 self._store = []
             def retain(self, text):
                 self._store.append(text)
@@ -56,9 +56,12 @@ async def handle_deploy(payload: DeployPayload):
     
     try:
         try:
-            await hindsight_client.aretain(bank_id="festopiya_seo", content=memory_text)
-        except AttributeError:
-            hindsight_client.retain(memory_text)
+            try:
+                await hindsight_client.aretain(bank_id="festopiya_seo", content=memory_text)
+            except AttributeError:
+                hindsight_client.retain(memory_text)
+        except Exception as e:
+            logging.warning(f"Failed to retain deploy event to Hindsight: {e}")
             
         return {"status": "success", "message": "Code change retained in Hindsight", "retained": memory_text}
     except Exception as e:
@@ -73,23 +76,26 @@ async def trigger_analysis(payload: AnalysisPayload):
     asks Groq for the fix, and uses hindsight.retain() to permanently save the new Learned SEO Rule.
     """
     try:
-        # 1. Recall recent memories (specifically targeting client_festopiya)
-        try:
-            recall_results = await hindsight_client.arecall(bank_id="festopiya_seo", query="client_festopiya " + payload.issue, max_tokens=100)
-            results_list = getattr(recall_results, 'results', recall_results)
-        except AttributeError:
-            recall_results = hindsight_client.recall(query="client_festopiya " + payload.issue, top_k=5)
-            results_list = recall_results
-        
         retrieved_memories = []
-        for res in results_list:
-            if hasattr(res, 'text'):
-                retrieved_memories.append(res.text)
-            elif isinstance(res, dict) and 'text' in res:
-                retrieved_memories.append(res['text'])
-            else:
-                retrieved_memories.append(str(res))
-                
+        try:
+            # 1. Recall recent memories (specifically targeting client_festopiya)
+            try:
+                recall_results = await hindsight_client.arecall(bank_id="festopiya_seo", query="client_festopiya " + payload.issue, max_tokens=100)
+                results_list = getattr(recall_results, 'results', recall_results)
+            except AttributeError:
+                recall_results = hindsight_client.recall(query="client_festopiya " + payload.issue, top_k=5)
+                results_list = recall_results
+            
+            for res in results_list:
+                if hasattr(res, 'text'):
+                    retrieved_memories.append(res.text)
+                elif isinstance(res, dict) and 'text' in res:
+                    retrieved_memories.append(res['text'])
+                else:
+                    retrieved_memories.append(str(res))
+        except Exception as e:
+            logging.warning(f"Failed to retrieve from Hindsight (using empty memory): {e}")
+            
         context_str = "\n- ".join(retrieved_memories) if retrieved_memories else "No past memory available."
 
         # 2. Ask Groq for Analysis
@@ -103,24 +109,30 @@ async def trigger_analysis(payload: AnalysisPayload):
         
         user_prompt = f"Hindsight Memory Retrieved (Recent Code Changes):\n- {context_str}\n\nIssue: {payload.issue}\n\nBased on these recent code changes, why did traffic drop, and what is the fix?"
 
-        completion = groq_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            model="llama-3.1-70b-versatile", 
-            temperature=0.2
-        )
-
-        response_content = completion.choices[0].message.content
+        try:
+            completion = groq_client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                model="llama-3.1-70b-versatile", 
+                temperature=0.2
+            )
+            response_content = completion.choices[0].message.content
+        except Exception as e:
+            logging.error(f"Groq API error: {e}")
+            response_content = f"Failed to generate analysis due to API error: {e}"
 
         # 3. Retain the Learned SEO Rule
         rule_to_learn = f"[client_festopiya] LEARNED RULE from issue '{payload.issue}': {response_content}"
         
         try:
-            await hindsight_client.aretain(bank_id="festopiya_seo", content=rule_to_learn)
-        except AttributeError:
-            hindsight_client.retain(rule_to_learn)
+            try:
+                await hindsight_client.aretain(bank_id="festopiya_seo", content=rule_to_learn)
+            except AttributeError:
+                hindsight_client.retain(rule_to_learn)
+        except Exception as e:
+            logging.warning(f"Failed to retain learned rule to Hindsight: {e}")
 
         return {
             "analysis_and_fix": response_content,
