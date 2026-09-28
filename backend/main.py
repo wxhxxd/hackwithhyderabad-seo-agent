@@ -56,8 +56,8 @@ async def handle_deploy(payload: DeployPayload):
     
     try:
         try:
-            hindsight_client.retain(bank_id="festopiya_seo", content=memory_text)
-        except TypeError:
+            await hindsight_client.aretain(bank_id="festopiya_seo", content=memory_text)
+        except AttributeError:
             hindsight_client.retain(memory_text)
             
         return {"status": "success", "message": "Code change retained in Hindsight", "retained": memory_text}
@@ -75,9 +75,9 @@ async def trigger_analysis(payload: AnalysisPayload):
     try:
         # 1. Recall recent memories (specifically targeting client_festopiya)
         try:
-            recall_results = hindsight_client.recall(bank_id="festopiya_seo", query="client_festopiya " + payload.issue, max_tokens=100)
+            recall_results = await hindsight_client.arecall(bank_id="festopiya_seo", query="client_festopiya " + payload.issue, max_tokens=100)
             results_list = getattr(recall_results, 'results', recall_results)
-        except TypeError:
+        except AttributeError:
             recall_results = hindsight_client.recall(query="client_festopiya " + payload.issue, top_k=5)
             results_list = recall_results
         
@@ -118,8 +118,8 @@ async def trigger_analysis(payload: AnalysisPayload):
         rule_to_learn = f"[client_festopiya] LEARNED RULE from issue '{payload.issue}': {response_content}"
         
         try:
-            hindsight_client.retain(bank_id="festopiya_seo", content=rule_to_learn)
-        except TypeError:
+            await hindsight_client.aretain(bank_id="festopiya_seo", content=rule_to_learn)
+        except AttributeError:
             hindsight_client.retain(rule_to_learn)
 
         return {
