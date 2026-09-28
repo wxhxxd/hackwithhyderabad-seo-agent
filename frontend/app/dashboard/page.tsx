@@ -1,32 +1,67 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, GitPullRequest, Bug, TerminalSquare, Search, Plus, Play, ChevronRight, Activity, Database } from "lucide-react";
+import { Zap, GitPullRequest, Bug, TerminalSquare, Search, Plus, Play, ChevronRight, Activity, Database, Globe } from "lucide-react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+
+type Session = {
+  id: string;
+  title: string;
+  clientName: string;
+  targetUrl: string;
+  logs: string[];
+  fix: string;
+  state: "idle" | "analyzing" | "completed";
+};
 
 export default function Dashboard() {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [fix, setFix] = useState("");
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>([{
+    id: Date.now().toString(),
+    title: "Investigate Traffic Drop",
+    clientName: "festopiya",
+    targetUrl: "",
+    logs: [],
+    fix: "",
+    state: "idle"
+  }]);
+  
+  const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
+  const activeSession = sessions.find(s => s.id === activeSessionId)!;
+  
   const [traffic, setTraffic] = useState(8500);
-  const [trafficStatus, setTrafficStatus] = useState("Stable");
-  const [sessionState, setSessionState] = useState<"idle" | "analyzing" | "completed">("idle");
-  const [clientName, setClientName] = useState("festopiya");
-  const [targetUrl, setTargetUrl] = useState("");
+  const [isDeploying, setIsDeploying] = useState(false);
 
-  // 1. Simulate Vercel Code Deploy
+  const updateActiveSession = (updates: Partial<Session>) => {
+    setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, ...updates } : s));
+  };
+
+  const createNewSession = () => {
+    const newSession: Session = {
+      id: Date.now().toString(),
+      title: "New Investigation",
+      clientName: "new_client",
+      targetUrl: "",
+      logs: [],
+      fix: "",
+      state: "idle"
+    };
+    setSessions([newSession, ...sessions]);
+    setActiveSessionId(newSession.id);
+  };
+
+  // 1. Simulate Webhook Deploy
   const handleDeploy = async () => {
     setIsDeploying(true);
-    const changes = `Changed H1 tags to client-side rendering for ${clientName} vendor pages`;
+    const changes = `Changed H1 tags to client-side rendering for ${activeSession.clientName} vendor pages`;
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       await fetch(`${apiUrl}/api/webhook/deploy`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ changes, client_name: clientName }),
+        body: JSON.stringify({ changes, client_name: activeSession.clientName }),
       });
-      alert(`Deployed code changes and logged to Hindsight memory for ${clientName}.`);
+      alert(`Webhook sent! Deployed code changes and logged to Hindsight memory for ${activeSession.clientName}.`);
     } catch (e) {
       console.error(e);
       alert("Error deploying");
@@ -34,14 +69,15 @@ export default function Dashboard() {
     setIsDeploying(false);
   };
 
-  // 2. Simulate Traffic Drop
+  // 2. Trigger Analysis (with live scraping and memory)
   const handleTrafficDrop = async () => {
     setTraffic(4200);
-    setTrafficStatus("Critical Drop!");
-    setIsAnalyzing(true);
-    setSessionState("analyzing");
-    setLogs([]);
-    setFix("");
+    updateActiveSession({ 
+      state: "analyzing",
+      title: activeSession.targetUrl ? `Analyze ${activeSession.targetUrl}` : `Investigate ${activeSession.clientName}`,
+      logs: [],
+      fix: ""
+    });
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -50,20 +86,23 @@ export default function Dashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           issue: "Organic traffic dropped by 50% overnight", 
-          client_name: clientName,
-          target_url: targetUrl || undefined
+          client_name: activeSession.clientName,
+          target_url: activeSession.targetUrl || undefined
         }),
       });
       const data = await res.json();
-      setLogs(data.hindsight_memory_retrieved || []);
-      setFix(data.analysis_and_fix || "No analysis available.");
-      setSessionState("completed");
+      updateActiveSession({
+        logs: data.hindsight_memory_retrieved || [],
+        fix: data.analysis_and_fix || "No analysis available.",
+        state: "completed"
+      });
     } catch (e) {
       console.error(e);
-      setFix("Error reaching backend.");
-      setSessionState("completed");
+      updateActiveSession({
+        fix: "Error reaching backend.",
+        state: "completed"
+      });
     }
-    setIsAnalyzing(false);
   };
 
   return (
@@ -82,10 +121,10 @@ export default function Dashboard() {
           <span className="text-gray-300 mx-2">/</span>
           <input 
             type="text" 
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
+            value={activeSession.clientName}
+            onChange={(e) => updateActiveSession({ clientName: e.target.value })}
             className="text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1 outline-none focus:border-gray-400 w-32"
-            placeholder="Client Name"
+            placeholder="Client ID (e.g. acme)"
           />
         </div>
         <div className="flex items-center gap-4">
@@ -96,10 +135,10 @@ export default function Dashboard() {
           <button 
             onClick={handleDeploy} 
             disabled={isDeploying}
-            className="text-xs font-medium bg-white border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="text-xs font-medium bg-black hover:bg-gray-800 text-white px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             <GitPullRequest className="w-3.5 h-3.5" />
-            {isDeploying ? 'Deploying...' : 'Simulate Code Deploy'}
+            {isDeploying ? 'Sending Webhook...' : 'Fire Mock CI Webhook'}
           </button>
         </div>
       </nav>
@@ -107,35 +146,28 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar - Sessions */}
         <div className="w-64 border-r border-gray-200 bg-gray-50/50 flex flex-col p-4 flex-shrink-0 overflow-y-auto">
-          <button className="flex items-center gap-2 text-sm font-medium mb-8 hover:opacity-70 transition-opacity w-full text-left">
+          <button 
+            onClick={createNewSession}
+            className="flex items-center gap-2 text-sm font-medium mb-8 hover:opacity-70 transition-opacity w-full text-left"
+          >
             <div className="w-6 h-6 border border-gray-300 rounded flex items-center justify-center bg-white shadow-sm text-xs">
               <Plus className="w-3.5 h-3.5" />
             </div>
             New session
           </button>
           
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Pinned</div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">History</div>
           <div className="flex flex-col gap-1 mb-6">
-            <div className="px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-sm text-sm font-medium flex items-center gap-2 text-gray-900 cursor-pointer">
-              <Zap className="w-4 h-4 text-blue-600" />
-              Investigate Traffic Drop
-            </div>
-            <div className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
-              <GitPullRequest className="w-4 h-4 text-gray-400" />
-              Fix H1 render issue
-            </div>
-          </div>
-          
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">More</div>
-          <div className="flex flex-col gap-1">
-            <div className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
-              <Bug className="w-4 h-4 text-gray-400" />
-              Patch vulnerable deps
-            </div>
-            <div className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
-              <Search className="w-4 h-4 text-gray-400" />
-              Review API changes
-            </div>
+            {sessions.map(s => (
+              <div 
+                key={s.id}
+                onClick={() => setActiveSessionId(s.id)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 cursor-pointer transition-colors ${activeSessionId === s.id ? 'bg-white border border-gray-200 shadow-sm text-gray-900' : 'text-gray-600 hover:bg-gray-100 border border-transparent'}`}
+              >
+                {s.targetUrl ? <Globe className={`w-4 h-4 ${activeSessionId === s.id ? 'text-blue-600' : 'text-gray-400'}`} /> : <Zap className={`w-4 h-4 ${activeSessionId === s.id ? 'text-blue-600' : 'text-gray-400'}`} />}
+                <span className="truncate">{s.title}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -146,8 +178,8 @@ export default function Dashboard() {
           {/* Header */}
           <div className="h-16 border-b border-gray-100 flex items-center px-6 relative z-10 bg-white/80 backdrop-blur-sm">
             <h1 className="text-lg font-semibold flex items-center gap-2">
-              <Zap className="w-5 h-5 text-blue-600" />
-              Investigate Traffic Drop
+              {activeSession.targetUrl ? <Globe className="w-5 h-5 text-blue-600" /> : <Zap className="w-5 h-5 text-blue-600" />}
+              {activeSession.title}
             </h1>
           </div>
           
@@ -157,32 +189,33 @@ export default function Dashboard() {
               
               {/* Intro / Prompt Box */}
               <div className="flex flex-col gap-4">
-                <div className="self-end bg-gray-100 text-gray-900 px-5 py-3 rounded-2xl rounded-tr-sm text-sm md:text-base max-w-[85%] border border-gray-200">
-                  The organic traffic for {clientName} has suddenly dropped by 50%. Let's investigate the recent changes and find the root cause.
+                <div className="self-end bg-gray-100 text-gray-900 px-5 py-3 rounded-2xl rounded-tr-sm text-sm md:text-base max-w-[85%] border border-gray-200 shadow-sm">
+                  The organic traffic for <strong>{activeSession.clientName}</strong> has suddenly dropped by 50%. Let's investigate the recent changes and find the root cause.
                 </div>
                 
-                {sessionState === "idle" && (
-                  <div className="self-end flex flex-col items-end gap-3">
+                {activeSession.state === "idle" && (
+                  <div className="self-end flex flex-col items-end gap-3 mt-2 bg-white border border-gray-200 shadow-sm p-4 rounded-xl max-w-md w-full">
+                    <div className="text-sm font-medium text-gray-700 w-full mb-1">Target URL to Scrape (Optional)</div>
                     <input 
-                      type="text" 
-                      value={targetUrl}
-                      onChange={(e) => setTargetUrl(e.target.value)}
-                      placeholder="Optional: Enter a live URL to scrape (e.g. https://example.com)"
-                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-gray-400 w-[350px] shadow-sm"
+                      type="url" 
+                      value={activeSession.targetUrl}
+                      onChange={(e) => updateActiveSession({ targetUrl: e.target.value })}
+                      placeholder="e.g. https://example.com"
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-gray-400 w-full shadow-inner bg-gray-50"
                     />
                     <button 
                       onClick={handleTrafficDrop}
-                      className="bg-black hover:bg-gray-800 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2 w-full justify-center mt-2"
                     >
                       <Play className="w-4 h-4" />
-                      Run Analysis Simulation
+                      Run Web Scraper & Memory Analysis
                     </button>
                   </div>
                 )}
               </div>
 
               {/* Agent Thinking State */}
-              {sessionState === "analyzing" && (
+              {activeSession.state === "analyzing" && (
                 <div className="flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="w-8 h-8 bg-black rounded-full flex-shrink-0 flex items-center justify-center mt-1">
                     <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
@@ -190,9 +223,19 @@ export default function Dashboard() {
                   <div className="flex flex-col gap-3 w-full max-w-[85%]">
                     <div className="text-sm font-medium text-gray-500">Nexus is analyzing...</div>
                     <div className="bg-white border border-gray-200 shadow-sm p-5 rounded-xl rounded-tl-sm flex flex-col gap-3">
+                      {activeSession.targetUrl && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Globe className="w-4 h-4 text-blue-500 animate-pulse" />
+                          Scraping live DOM from {activeSession.targetUrl}...
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Database className="w-4 h-4 text-gray-500 animate-pulse" />
+                        Fetching isolated memory context for {activeSession.clientName}...
+                      </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <div className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-black animate-spin" />
-                        Fetching recent deployment logs from Hindsight Memory...
+                        Generating root cause analysis...
                       </div>
                     </div>
                   </div>
@@ -200,7 +243,7 @@ export default function Dashboard() {
               )}
 
               {/* Agent Completed State */}
-              {sessionState === "completed" && (
+              {activeSession.state === "completed" && (
                 <div className="flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="w-8 h-8 bg-black rounded-full flex-shrink-0 flex items-center justify-center mt-1">
                     <div className="w-2.5 h-2.5 bg-white rounded-full" />
@@ -215,39 +258,44 @@ export default function Dashboard() {
                     <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
                       <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2 text-xs font-medium text-gray-600">
                         <Database className="w-3.5 h-3.5" />
-                        Hindsight Context Retrieved
+                        Memory Retrieved for {activeSession.clientName}
                       </div>
                       <div className="p-4 bg-gray-50/50 max-h-48 overflow-y-auto">
-                        {logs.length > 0 ? (
+                        {activeSession.logs.length > 0 ? (
                           <div className="flex flex-col gap-2">
-                            {logs.map((log, idx) => (
+                            {activeSession.logs.map((log, idx) => (
                               <div key={idx} className="text-xs font-mono text-gray-600 bg-white border border-gray-200 p-2.5 rounded-md">
                                 {log}
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-500 italic">No recent logs found.</div>
+                          <div className="text-xs text-gray-500 italic">No previous webhook logs found for this client ID.</div>
                         )}
                       </div>
                     </div>
 
-                    {/* Analysis Card */}
+                    {/* Analysis Card with ReactMarkdown */}
                     <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
                       <div className="bg-blue-50/50 border-b border-gray-200 px-4 py-3 flex items-center gap-2">
                         <TerminalSquare className="w-4 h-4 text-blue-600" />
                         <span className="text-sm font-medium text-gray-900">Root Cause Analysis & Fix</span>
                       </div>
-                      <div className="p-5">
-                        <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">
-                          {fix.split('Learned SEO Rule:')[0]}
+                      <div className="p-6">
+                        <div className="prose prose-sm prose-blue max-w-none text-gray-700 leading-relaxed font-sans">
+                          <ReactMarkdown>
+                            {activeSession.fix.split('Learned SEO Rule:')[0]}
+                          </ReactMarkdown>
                         </div>
                         
-                        {fix.includes('Learned SEO Rule:') && (
-                          <div className="mt-6 bg-gray-900 text-gray-100 p-4 rounded-lg flex flex-col gap-2">
-                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Learned Rule Added to Memory</div>
-                            <div className="text-sm font-mono leading-relaxed text-blue-200">
-                              {fix.split('Learned SEO Rule:')[1].trim()}
+                        {activeSession.fix.includes('Learned SEO Rule:') && (
+                          <div className="mt-8 bg-gray-900 text-gray-100 p-5 rounded-lg flex flex-col gap-2 shadow-inner">
+                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                              <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                              Learned Rule Added to Memory
+                            </div>
+                            <div className="text-sm font-mono leading-relaxed text-blue-100">
+                              {activeSession.fix.split('Learned SEO Rule:')[1].trim()}
                             </div>
                           </div>
                         )}
