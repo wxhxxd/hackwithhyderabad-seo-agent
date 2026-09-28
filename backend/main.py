@@ -108,7 +108,7 @@ async def trigger_analysis(payload: AnalysisPayload):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            model="llama3-70b-8192", 
+            model="llama-3.1-70b-versatile", 
             temperature=0.2
         )
 
