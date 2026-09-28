@@ -15,7 +15,8 @@ export default function Dashboard() {
     setIsDeploying(true);
     const changes = "Changed H1 tags to client-side rendering for Festopiya vendor pages";
     try {
-      await fetch("http://localhost:8000/api/webhook/deploy", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await fetch(`${apiUrl}/api/webhook/deploy`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ changes }),
@@ -37,7 +38,8 @@ export default function Dashboard() {
     setFix("");
 
     try {
-      const res = await fetch("http://localhost:8000/api/trigger-analysis", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/trigger-analysis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ issue: "Organic traffic dropped by 50% overnight" }),
