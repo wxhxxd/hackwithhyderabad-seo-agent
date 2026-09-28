@@ -55,9 +55,9 @@ async def handle_deploy(payload: DeployPayload):
     memory_text = f"[client_festopiya] CODE DEPLOY: {payload.changes}"
     
     try:
-        if hasattr(hindsight_client, 'retain'):
-            hindsight_client.retain(text=memory_text)
-        else:
+        try:
+            hindsight_client.retain(bank_id="festopiya_seo", content=memory_text)
+        except TypeError:
             hindsight_client.retain(memory_text)
             
         return {"status": "success", "message": "Code change retained in Hindsight", "retained": memory_text}
@@ -74,10 +74,15 @@ async def trigger_analysis(payload: AnalysisPayload):
     """
     try:
         # 1. Recall recent memories (specifically targeting client_festopiya)
-        recall_results = hindsight_client.recall(query="client_festopiya " + payload.issue, top_k=5)
+        try:
+            recall_results = hindsight_client.recall(bank_id="festopiya_seo", query="client_festopiya " + payload.issue, max_tokens=100)
+            results_list = getattr(recall_results, 'results', recall_results)
+        except TypeError:
+            recall_results = hindsight_client.recall(query="client_festopiya " + payload.issue, top_k=5)
+            results_list = recall_results
         
         retrieved_memories = []
-        for res in recall_results:
+        for res in results_list:
             if hasattr(res, 'text'):
                 retrieved_memories.append(res.text)
             elif isinstance(res, dict) and 'text' in res:
@@ -112,9 +117,9 @@ async def trigger_analysis(payload: AnalysisPayload):
         # 3. Retain the Learned SEO Rule
         rule_to_learn = f"[client_festopiya] LEARNED RULE from issue '{payload.issue}': {response_content}"
         
-        if hasattr(hindsight_client, 'retain'):
-            hindsight_client.retain(text=rule_to_learn)
-        else:
+        try:
+            hindsight_client.retain(bank_id="festopiya_seo", content=rule_to_learn)
+        except TypeError:
             hindsight_client.retain(rule_to_learn)
 
         return {
