@@ -156,7 +156,8 @@ async def trigger_analysis(payload: AnalysisPayload):
                     {"role": "user", "content": user_prompt}
                 ],
                 model="qwen/qwen3.8-27b", 
-                temperature=0.2
+                temperature=0.2,
+                max_tokens=500
             )
             response_content = completion.choices[0].message.content
         except Exception as e:
