@@ -1,150 +1,173 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { ChevronRight, Zap, Play, TerminalSquare, Search, Bug, GitPullRequest, LayoutTemplate, Database } from "lucide-react";
 
-export default function Dashboard() {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [fix, setFix] = useState("");
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [traffic, setTraffic] = useState(8500);
-  const [trafficStatus, setTrafficStatus] = useState("Stable");
-
-  // 1. Simulate Vercel Code Deploy
-  const handleDeploy = async () => {
-    setIsDeploying(true);
-    const changes = "Changed H1 tags to client-side rendering for Festopiya vendor pages";
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      await fetch(`${apiUrl}/api/webhook/deploy`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ changes }),
-      });
-      alert("Deployed code changes and logged to Hindsight memory.");
-    } catch (e) {
-      console.error(e);
-      alert("Error deploying");
-    }
-    setIsDeploying(false);
-  };
-
-  // 2. Simulate Traffic Drop
-  const handleTrafficDrop = async () => {
-    setTraffic(4200);
-    setTrafficStatus("Critical Drop!");
-    setIsAnalyzing(true);
-    setLogs([]);
-    setFix("");
-
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/trigger-analysis`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issue: "Organic traffic dropped by 50% overnight" }),
-      });
-      const data = await res.json();
-      setLogs(data.hindsight_memory_retrieved || []);
-      setFix(data.analysis_and_fix || "No analysis available.");
-    } catch (e) {
-      console.error(e);
-      setFix("Error reaching backend.");
-    }
-    setIsAnalyzing(false);
-  };
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white font-sans flex flex-col p-8">
-      <header className="mb-8 border-b border-gray-800 pb-4">
-        <h1 className="text-3xl font-bold text-blue-500">Autonomous SEO Dashboard</h1>
-        <p className="text-gray-400">Client: Festopiya</p>
-      </header>
+    <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-gray-200">
+      {/* Navigation */}
+      <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-100 max-w-[1400px] mx-auto">
+        <div className="flex items-center gap-10">
+          <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
+            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+              <div className="w-2 h-2 bg-white rounded-full" />
+            </div>
+            Nexus
+          </div>
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+            <span className="cursor-pointer hover:text-black">Product</span>
+            <span className="cursor-pointer hover:text-black">Solutions</span>
+            <span className="cursor-pointer hover:text-black">Resources</span>
+            <span className="cursor-pointer hover:text-black">Customers</span>
+            <span className="cursor-pointer hover:text-black">Pricing</span>
+            <span className="cursor-pointer hover:text-black">Blog</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 text-sm font-medium">
+          <span className="hidden md:block cursor-pointer text-gray-600 hover:text-black">Get a demo</span>
+          <span className="hidden md:block cursor-pointer text-gray-600 hover:text-black">Login</span>
+          <Link href="/dashboard">
+            <button className="bg-black hover:bg-gray-800 text-white px-5 py-2.5 rounded-full transition-colors flex items-center gap-2">
+              Get started
+            </button>
+          </Link>
+        </div>
+      </nav>
 
-      <div className="flex flex-col lg:flex-row gap-8 flex-grow">
+      {/* Hero Section */}
+      <main className="max-w-[1200px] mx-auto px-8 pt-24 pb-20 flex flex-col items-center text-center">
+        <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1] max-w-4xl mb-6">
+          Meet Nexus, your team's autonomous SEO engineer
+        </h1>
+        <p className="text-xl text-gray-500 max-w-2xl mb-10 leading-relaxed">
+          Nexus runs in the cloud or on your machine, analyzes traffic drops in its own environment, and won't stop until the SEO fix is ready to merge.
+        </p>
         
-        {/* Main Content Area: Dashboard */}
-        <div className="flex-1 flex flex-col gap-8">
+        <div className="flex items-center gap-4 mb-24">
+          <Link href="/dashboard">
+            <button className="bg-black hover:bg-gray-800 text-white px-6 py-3 rounded-full font-medium transition-colors text-lg">
+              Get started
+            </button>
+          </Link>
+          <button className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 px-6 py-3 rounded-full font-medium transition-colors text-lg">
+            Book a demo
+          </button>
+        </div>
+
+        {/* Mock UI Showcase */}
+        <div className="w-full max-w-5xl bg-white border border-gray-200 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col relative z-10">
+          {/* Mac window header */}
+          <div className="h-12 bg-gray-50 border-b border-gray-200 flex items-center px-4 gap-2">
+            <div className="flex gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-400" />
+              <div className="w-3 h-3 rounded-full bg-amber-400" />
+              <div className="w-3 h-3 rounded-full bg-green-400" />
+            </div>
+            <div className="mx-auto bg-white border border-gray-200 rounded-md px-3 py-1 flex items-center gap-2 text-xs text-gray-500 shadow-sm">
+              <Search className="w-3 h-3" />
+              nexus.ai/dashboard
+            </div>
+            <div className="w-12" /> {/* Spacer */}
+          </div>
           
-          {/* Top Section: Live Traffic Chart */}
-          <section className="bg-gray-900 p-6 rounded-xl border border-gray-800 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-300">Live Organic Traffic</h2>
-              <div className={`text-5xl font-bold mt-2 ${traffic < 5000 ? 'text-red-500' : 'text-green-500'}`}>
-                {traffic.toLocaleString()} <span className="text-lg font-normal text-gray-500">visitors/day</span>
+          {/* Mock App Content */}
+          <div className="flex h-[450px]">
+            {/* Sidebar */}
+            <div className="w-64 border-r border-gray-100 p-4 bg-gray-50/50 flex flex-col text-left">
+              <div className="flex items-center gap-2 text-sm font-medium mb-6">
+                <div className="w-5 h-5 border border-gray-300 rounded flex items-center justify-center bg-white shadow-sm text-xs">+</div>
+                New session
               </div>
-              <div className={`mt-1 font-medium ${traffic < 5000 ? 'text-red-400' : 'text-green-400'}`}>
-                Status: {trafficStatus}
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Sessions</div>
+              <div className="flex flex-col gap-1">
+                <div className="px-2 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-sm font-medium flex items-center gap-2 text-blue-600">
+                  <Zap className="w-4 h-4" />
+                  Investigate Traffic Drop
+                </div>
+                <div className="px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md flex items-center gap-2">
+                  <GitPullRequest className="w-4 h-4 text-gray-400" />
+                  Fix H1 render issue
+                </div>
+                <div className="px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md flex items-center gap-2">
+                  <Bug className="w-4 h-4 text-gray-400" />
+                  Patch vulnerable deps
+                </div>
               </div>
             </div>
             
-            {/* Controls */}
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={handleDeploy} 
-                disabled={isDeploying}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {isDeploying ? 'Deploying...' : 'Simulate Vercel Code Deploy'}
-              </button>
-              <button 
-                onClick={handleTrafficDrop} 
-                disabled={isAnalyzing}
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {isAnalyzing ? 'Analyzing...' : 'Simulate Traffic Drop'}
-              </button>
-            </div>
-          </section>
-
-          {/* Action UI: Generated Fix & New Learned Rule */}
-          <section className="bg-gray-900 p-6 rounded-xl border border-gray-800 flex-grow flex flex-col">
-            <h2 className="text-xl font-semibold mb-4 text-blue-400">Agent Output: Generated Fix & New Learned Rule</h2>
-            <div className="flex-grow bg-gray-950 rounded-lg p-6 border border-gray-800 overflow-y-auto">
-              {isAnalyzing ? (
-                <div className="animate-pulse text-yellow-500 font-mono">Agent is analyzing recent changes...</div>
-              ) : fix ? (
-                <div className="prose prose-invert max-w-none">
-                  <p className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-gray-300">{fix}</p>
+            {/* Main Area */}
+            <div className="flex-1 p-8 bg-white relative overflow-hidden flex flex-col justify-end text-left">
+              <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
+              
+              <div className="relative z-10 flex flex-col gap-4 max-w-2xl mx-auto w-full">
+                <div className="self-end bg-gray-100 text-gray-800 px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm max-w-[80%]">
+                  Organic traffic dropped by 50% overnight. Find out why and fix it.
                 </div>
-              ) : (
-                <div className="text-gray-600 italic">Waiting for an anomaly to investigate...</div>
-              )}
+                
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-black rounded-full flex-shrink-0 flex items-center justify-center mt-1">
+                    <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                  </div>
+                  <div className="flex flex-col gap-2 w-full">
+                    <div className="bg-white border border-gray-200 shadow-sm p-4 rounded-xl">
+                      <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                        <TerminalSquare className="w-4 h-4 text-gray-500" />
+                        Nexus Analysis
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                        I've analyzed the recent deployment logs from Hindsight. The traffic drop was caused by a decommissioned AI model (`mixtral-8x7b`) failing in the backend pipeline, which halted dynamic metadata updates.
+                      </p>
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs font-mono text-gray-700">
+                        Learned Rule: Always validate AI model availability in SEO automation pipelines.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </section>
-
+          </div>
         </div>
+      </main>
 
-        {/* Sidebar: Memory UI */}
-        <aside className={`w-full lg:w-1/3 p-6 rounded-xl shadow-lg border flex flex-col transition-colors duration-500 ${isAnalyzing || logs.length > 0 ? 'bg-indigo-950 border-indigo-500 shadow-indigo-900/50' : 'bg-gray-900 border-gray-800'}`}>
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2">
-              <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-              Nexus Autonomous Investigation
+      {/* Integrations Section */}
+      <section className="bg-gray-50 py-24 border-t border-gray-100">
+        <div className="max-w-[1200px] mx-auto px-8">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 max-w-md leading-tight">
+              Connect once, deliver repeatedly<br/>
+              <span className="text-gray-400">with your favorite tools</span>
             </h2>
-            <p className="text-gray-400 text-sm mt-1">Hindsight memory logs retrieved for anomaly context.</p>
           </div>
-
-          <div className="flex-grow flex flex-col gap-3 overflow-y-auto">
-            {logs.length > 0 ? (
-              logs.map((log, idx) => (
-                <div key={idx} className="bg-gray-950 p-4 rounded-lg border border-indigo-500/30">
-                  <p className="text-sm font-mono text-indigo-300">{log}</p>
-                </div>
-              ))
-            ) : isAnalyzing ? (
-              <div className="text-indigo-400 text-sm italic flex items-center justify-center h-full border border-dashed border-indigo-800 rounded-lg p-6 font-mono">
-                Searching Hindsight Memory...
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12">
+            <div>
+              <div className="w-10 h-10 mb-4 text-gray-400 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 8.21 11.38c.6.11.82-.26.82-.58v-2.16c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.08-.73.08-.73 1.2.08 1.83 1.23 1.83 1.23 1.08 1.83 2.81 1.3 3.5 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.21.69.82.58A12 12 0 0 0 24 12a12 12 0 0 0-12.016-12z"/></svg>
               </div>
-            ) : (
-              <div className="text-gray-600 text-sm italic flex items-center justify-center h-full border border-dashed border-gray-800 rounded-lg p-6">
-                System idle.
+              <p className="text-gray-500 text-sm font-medium">Fix CI when it fails</p>
+            </div>
+            <div>
+              <div className="w-10 h-10 mb-4 text-gray-400 flex items-center justify-center">
+                <Database className="w-8 h-8" />
               </div>
-            )}
+              <p className="text-gray-500 text-sm font-medium">Investigate Hindsight logs</p>
+            </div>
+            <div>
+              <div className="w-10 h-10 mb-4 text-gray-400 flex items-center justify-center">
+                <LayoutTemplate className="w-8 h-8" />
+              </div>
+              <p className="text-gray-500 text-sm font-medium">Build from a spec page</p>
+            </div>
+            <div>
+              <div className="w-10 h-10 mb-4 text-gray-400 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.528 2.528 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+              </div>
+              <p className="text-gray-500 text-sm font-medium">Triage bugs as they land</p>
+            </div>
           </div>
-        </aside>
-
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
