@@ -115,7 +115,7 @@ async def trigger_analysis(payload: AnalysisPayload):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                model="mixtral-8x7b-32768", 
+                model="qwen/qwen3.8-27b", 
                 temperature=0.2
             )
             response_content = completion.choices[0].message.content
