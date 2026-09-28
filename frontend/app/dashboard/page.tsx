@@ -12,19 +12,20 @@ export default function Dashboard() {
   const [traffic, setTraffic] = useState(8500);
   const [trafficStatus, setTrafficStatus] = useState("Stable");
   const [sessionState, setSessionState] = useState<"idle" | "analyzing" | "completed">("idle");
+  const [clientName, setClientName] = useState("festopiya");
 
   // 1. Simulate Vercel Code Deploy
   const handleDeploy = async () => {
     setIsDeploying(true);
-    const changes = "Changed H1 tags to client-side rendering for Festopiya vendor pages";
+    const changes = `Changed H1 tags to client-side rendering for ${clientName} vendor pages`;
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       await fetch(`${apiUrl}/api/webhook/deploy`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ changes }),
+        body: JSON.stringify({ changes, client_name: clientName }),
       });
-      alert("Deployed code changes and logged to Hindsight memory.");
+      alert(`Deployed code changes and logged to Hindsight memory for ${clientName}.`);
     } catch (e) {
       console.error(e);
       alert("Error deploying");
@@ -46,7 +47,7 @@ export default function Dashboard() {
       const res = await fetch(`${apiUrl}/api/trigger-analysis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issue: "Organic traffic dropped by 50% overnight" }),
+        body: JSON.stringify({ issue: "Organic traffic dropped by 50% overnight", client_name: clientName }),
       });
       const data = await res.json();
       setLogs(data.hindsight_memory_retrieved || []);
@@ -74,7 +75,13 @@ export default function Dashboard() {
             </div>
           </Link>
           <span className="text-gray-300 mx-2">/</span>
-          <span className="text-sm font-medium text-gray-600">Festopiya</span>
+          <input 
+            type="text" 
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            className="text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1 outline-none focus:border-gray-400 w-32"
+            placeholder="Client Name"
+          />
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-xs font-medium">
@@ -146,7 +153,7 @@ export default function Dashboard() {
               {/* Intro / Prompt Box */}
               <div className="flex flex-col gap-4">
                 <div className="self-end bg-gray-100 text-gray-900 px-5 py-3 rounded-2xl rounded-tr-sm text-sm md:text-base max-w-[85%] border border-gray-200">
-                  The organic traffic for Festopiya has suddenly dropped by 50%. Let's investigate the recent changes and find the root cause.
+                  The organic traffic for {clientName} has suddenly dropped by 50%. Let's investigate the recent changes and find the root cause.
                 </div>
                 
                 {sessionState === "idle" && (

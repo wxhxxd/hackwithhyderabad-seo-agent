@@ -41,23 +41,26 @@ hindsight_client = Hindsight(base_url="https://api.hindsight.vectorize.io", api_
 
 class DeployPayload(BaseModel):
     changes: str
+    client_name: str = "festopiya"
 
 class AnalysisPayload(BaseModel):
     issue: str
+    client_name: str = "festopiya"
 
 @app.post("/api/webhook/deploy")
 async def handle_deploy(payload: DeployPayload):
     """
     Endpoint 1: /api/webhook/deploy
     Accepts a JSON payload of simulated code changes and uses hindsight.retain() 
-    to save this with the tag client_festopiya.
+    to save this with the tag for the specific client.
     """
-    memory_text = f"[client_festopiya] CODE DEPLOY: {payload.changes}"
+    memory_text = f"[{payload.client_name}] CODE DEPLOY: {payload.changes}"
+    client_tag = f"client_{payload.client_name}"
     
     try:
         try:
             try:
-                await hindsight_client.aretain(bank_id="festopiya_seo", content=memory_text)
+                await hindsight_client.aretain(bank_id="festopiya_seo", content=memory_text, tags=[client_tag])
             except AttributeError:
                 hindsight_client.retain(memory_text)
         except Exception as e:
@@ -72,18 +75,25 @@ async def handle_deploy(payload: DeployPayload):
 async def trigger_analysis(payload: AnalysisPayload):
     """
     Endpoint 2: /api/trigger-analysis
-    Recalls recent deployment memories for client_festopiya, passes them to Groq, 
+    Recalls recent deployment memories for the specific client, passes them to Groq, 
     asks Groq for the fix, and uses hindsight.retain() to permanently save the new Learned SEO Rule.
     """
+    client_tag = f"client_{payload.client_name}"
+    
     try:
         retrieved_memories = []
         try:
-            # 1. Recall recent memories (specifically targeting client_festopiya)
+            # 1. Recall recent memories targeting the specific client
             try:
-                recall_results = await hindsight_client.arecall(bank_id="festopiya_seo", query="client_festopiya " + payload.issue, max_tokens=100)
+                recall_results = await hindsight_client.arecall(
+                    bank_id="festopiya_seo", 
+                    query=f"{payload.issue}", 
+                    max_tokens=100,
+                    tags=[client_tag]
+                )
                 results_list = getattr(recall_results, 'results', recall_results)
             except AttributeError:
-                recall_results = hindsight_client.recall(query="client_festopiya " + payload.issue, top_k=5)
+                recall_results = hindsight_client.recall(query=f"{payload.issue}", top_k=5)
                 results_list = recall_results
             
             for res in results_list:
@@ -100,7 +110,7 @@ async def trigger_analysis(payload: AnalysisPayload):
 
         # 2. Ask Groq for Analysis
         system_prompt = (
-            "You are an Autonomous SEO Background Worker for Festopiya. "
+            f"You are an Autonomous SEO Background Worker for {payload.client_name}. "
             "Traffic has just dropped. Based on the recent code changes retrieved from Hindsight memory, "
             "determine why the traffic dropped, and provide a fix. Make your analysis punchy and highly technical. "
             "Also, you MUST format your final sentence exactly as: "
@@ -124,11 +134,11 @@ async def trigger_analysis(payload: AnalysisPayload):
             response_content = f"Failed to generate analysis due to API error: {e}"
 
         # 3. Retain the Learned SEO Rule
-        rule_to_learn = f"[client_festopiya] LEARNED RULE from issue '{payload.issue}': {response_content}"
+        rule_to_learn = f"[{payload.client_name}] LEARNED RULE from issue '{payload.issue}': {response_content}"
         
         try:
             try:
-                await hindsight_client.aretain(bank_id="festopiya_seo", content=rule_to_learn)
+                await hindsight_client.aretain(bank_id="festopiya_seo", content=rule_to_learn, tags=[client_tag])
             except AttributeError:
                 hindsight_client.retain(rule_to_learn)
         except Exception as e:
