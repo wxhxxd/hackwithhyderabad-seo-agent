@@ -39,6 +39,10 @@ HINDSIGHT_API_KEY = os.environ.get("HINDSIGHT_API_KEY", "dummy_key")
 groq_client = Groq(api_key=GROQ_API_KEY)
 hindsight_client = Hindsight(base_url="https://api.hindsight.vectorize.io", api_key=HINDSIGHT_API_KEY)
 
+import urllib.request
+import re
+from typing import Optional
+
 class DeployPayload(BaseModel):
     changes: str
     client_name: str = "festopiya"
@@ -46,6 +50,7 @@ class DeployPayload(BaseModel):
 class AnalysisPayload(BaseModel):
     issue: str
     client_name: str = "festopiya"
+    target_url: Optional[str] = None
 
 @app.post("/api/webhook/deploy")
 async def handle_deploy(payload: DeployPayload):
@@ -75,8 +80,8 @@ async def handle_deploy(payload: DeployPayload):
 async def trigger_analysis(payload: AnalysisPayload):
     """
     Endpoint 2: /api/trigger-analysis
-    Recalls recent deployment memories for the specific client, passes them to Groq, 
-    asks Groq for the fix, and uses hindsight.retain() to permanently save the new Learned SEO Rule.
+    Recalls recent deployment memories for the specific client, optionally scrapes a live URL,
+    passes them to Groq, asks Groq for the fix, and uses hindsight.retain() to permanently save the new Learned SEO Rule.
     """
     client_tag = f"client_{payload.client_name}"
     
@@ -108,16 +113,36 @@ async def trigger_analysis(payload: AnalysisPayload):
             
         context_str = "\n- ".join(retrieved_memories) if retrieved_memories else "No past memory available."
 
+        # Scrape live URL if provided
+        scraped_content = ""
+        if payload.target_url:
+            try:
+                req = urllib.request.Request(payload.target_url, headers={'User-Agent': 'Mozilla/5.0 (Nexus Agent)'})
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    html_bytes = response.read()
+                    html_str = html_bytes.decode('utf-8', errors='ignore')
+                    # Strip basic HTML tags to save tokens
+                    text_only = re.sub('<[^<]+>', ' ', html_str)
+                    text_only = re.sub('\s+', ' ', text_only)
+                    scraped_content = text_only[:3000].strip()
+            except Exception as e:
+                scraped_content = f"Failed to scrape {payload.target_url}: {e}"
+
         # 2. Ask Groq for Analysis
         system_prompt = (
             f"You are an Autonomous SEO Background Worker for {payload.client_name}. "
             "Traffic has just dropped. Based on the recent code changes retrieved from Hindsight memory, "
-            "determine why the traffic dropped, and provide a fix. Make your analysis punchy and highly technical. "
+            "and optionally the live website content, determine why the traffic dropped, and provide a fix. "
+            "Make your analysis punchy and highly technical. "
             "Also, you MUST format your final sentence exactly as: "
             "'Learned SEO Rule: <your rule here>'"
         )
         
-        user_prompt = f"Hindsight Memory Retrieved (Recent Code Changes):\n- {context_str}\n\nIssue: {payload.issue}\n\nBased on these recent code changes, why did traffic drop, and what is the fix?"
+        user_prompt = f"Hindsight Memory Retrieved (Recent Code Changes):\n- {context_str}\n\nIssue: {payload.issue}\n\n"
+        if payload.target_url:
+            user_prompt += f"Live Website Content Scraped from {payload.target_url}:\n---\n{scraped_content}\n---\n\n"
+        
+        user_prompt += "Based on these recent code changes and the live website content, why did traffic drop, and what is the fix?"
 
         try:
             completion = groq_client.chat.completions.create(

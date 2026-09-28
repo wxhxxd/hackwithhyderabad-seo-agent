@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [trafficStatus, setTrafficStatus] = useState("Stable");
   const [sessionState, setSessionState] = useState<"idle" | "analyzing" | "completed">("idle");
   const [clientName, setClientName] = useState("festopiya");
+  const [targetUrl, setTargetUrl] = useState("");
 
   // 1. Simulate Vercel Code Deploy
   const handleDeploy = async () => {
@@ -47,7 +48,11 @@ export default function Dashboard() {
       const res = await fetch(`${apiUrl}/api/trigger-analysis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issue: "Organic traffic dropped by 50% overnight", client_name: clientName }),
+        body: JSON.stringify({ 
+          issue: "Organic traffic dropped by 50% overnight", 
+          client_name: clientName,
+          target_url: targetUrl || undefined
+        }),
       });
       const data = await res.json();
       setLogs(data.hindsight_memory_retrieved || []);
@@ -157,7 +162,14 @@ export default function Dashboard() {
                 </div>
                 
                 {sessionState === "idle" && (
-                  <div className="self-end">
+                  <div className="self-end flex flex-col items-end gap-3">
+                    <input 
+                      type="text" 
+                      value={targetUrl}
+                      onChange={(e) => setTargetUrl(e.target.value)}
+                      placeholder="Optional: Enter a live URL to scrape (e.g. https://example.com)"
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-gray-400 w-[350px] shadow-sm"
+                    />
                     <button 
                       onClick={handleTrafficDrop}
                       className="bg-black hover:bg-gray-800 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
