@@ -92,22 +92,27 @@ async def trigger_analysis(payload: AnalysisPayload):
             try:
                 recall_results = await hindsight_client.arecall(
                     bank_id="festopiya_seo", 
-                    query=f"{payload.issue}", 
+                    query=f"[{payload.client_name}] {payload.issue}", 
                     max_tokens=100,
                     tags=[client_tag]
                 )
                 results_list = getattr(recall_results, 'results', recall_results)
             except AttributeError:
-                recall_results = hindsight_client.recall(query=f"{payload.issue}", top_k=5)
+                recall_results = hindsight_client.recall(query=f"[{payload.client_name}] {payload.issue}", top_k=5)
                 results_list = recall_results
             
             for res in results_list:
+                text = ""
                 if hasattr(res, 'text'):
-                    retrieved_memories.append(res.text)
+                    text = res.text
                 elif isinstance(res, dict) and 'text' in res:
-                    retrieved_memories.append(res['text'])
+                    text = res['text']
                 else:
-                    retrieved_memories.append(str(res))
+                    text = str(res)
+                    
+                # Strict Multi-Tenant Isolation: Only keep memories that explicitly belong to this client
+                if f"[{payload.client_name}]" in text:
+                    retrieved_memories.append(text)
         except Exception as e:
             logging.warning(f"Failed to retrieve from Hindsight (using empty memory): {e}")
             
